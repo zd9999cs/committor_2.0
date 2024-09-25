@@ -1,0 +1,36 @@
+# vim:ft=plumed
+UNITS NATURAL
+
+# load interface for bias computation
+#LOAD FILE=../../pytorch_model_bias.cpp
+LOAD FILE=../../pytorch_model_bias.so
+
+p: POSITION ATOM=1
+
+# define potential
+mueller: CUSTOM ARG=p.x,p.y PERIODIC=NO ...
+  FUNC=10*(2+(4/3)*x^4-2*y^2+y^4+10/3*x^2*(y^2-1))+7*exp(-((x+0.7)^2+(y-0.8)^2)/(0.4^2))+1*exp(-((x-1)^2+(y+0.3)^2)/(0.4^2))-6*exp(-((x+1)^2+(y+0.6)^2)/(0.4^2))
+...
+
+# apply potential 
+potential: BIASVALUE ARG=mueller
+
+# committor and committor-based bias
+z: PYTORCH_MODEL_BIAS FILE=../../../models/model_1_z.pt ARG=p.x,p.y LAMBDA=1.0 EPSILON=1e-7
+
+q: CUSTOM ARG=z.node-0 var=z PERIODIC=NO FUNC=1/(1+exp(-3*z))
+
+# this is the total Kolmogorov bias, we express it on z for numerical reasons
+bias: CUSTOM ARG=z.bias-0,q var=zbias,q PERIODIC=NO FUNC=-1*(zbias+2*log(q+1e-7)+2*log(1.0-q+1e-7))
+BIASVALUE ARG=bias
+
+# opes bias
+opes: OPES_METAD ARG=z.node-0 BARRIER=20 TEMP=1 PACE=500
+
+# define walls
+lwall: LOWER_WALLS ARG=p.x KAPPA=1000 AT=-2
+uwall: UPPER_WALLS ARG=p.x KAPPA=1000 AT=+2
+
+PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=*
+
+ENDPLUMED
