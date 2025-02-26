@@ -1,5 +1,14 @@
 #### Supporting data for the paper:
 ## "Everything everywhere all at once, a probability-based enhanced sampling approach to rare events"
+Enrico Trizio, Peilin Kang and Michele Parrinello
+
+[![ArXiv](https://img.shields.io/badge/arXiv-2410.17029-lightblue)](https://arxiv.org/abs/2410.17029)
+
+The training of the models was based on the [mlcolvar library](https://github.com/luigibonati/mlcolvar), where the updated relevant code and updated example notebooks are available:
+- [didactical example: Muller-brown](https://github.com/luigibonati/mlcolvar/blob/main/docs/notebooks/tutorials/cvs_committor.ipynb)
+- [practical example: Alanine with distances](https://github.com/luigibonati/mlcolvar/blob/main/docs/notebooks/examples/ex_committor.ipynb)
+
+The results of the paper were obtained using the [1.2.2 version of the library](https://github.com/luigibonati/mlcolvar/tree/v1.2.2).
 
 ---
 
@@ -36,3 +45,18 @@ In the main text, data from `iter_2` are reported
     - **template**: template folder for biased simulations, including the input files for starting simulations from A and B basins (`input_md_A.dat`, `input_md_B.dat`, `input_md-potential.dat`, `plumed.dat`)
     - **iter_***: input files (`input_md_A.dat`, `input_md_B.dat`, `input_md-potential.dat`, `plumed.dat`) and results (`A/COLVAR` and `B/COLVAR`) obtained from simulations at different iterations of the procedure. `COLVAR` files have been used to incrementally build the variational loss dataset.
   - **models**: frozen torchscript models for committor (`model_*_q.pt` files) and for z (`model_*_z.pt` files) for the different iterations
+
+
+#### chignolin : files for chignolin folding in explicit water using `Gromacs`
+Training data are too large for Github, they will be available in the Zenodo repo associated with the published paper.
+  - **models**: frozen torchscript models for committor (`model_*.pt`, `model_*.para` files) and for z (`model_*_zeta.pt` files) for the different iterations
+  - **sims/template**: template folder for biased and unbiased simulations, including files for starting simulations from folded and unfolded states (`folded.gro`, `unfolded.gro`, `mdT.mdp`, `topol.top`), PLUMED input files (`plumed.dat`, `plumed-descriptors.dat`, `plumed_position.dat`) and the additional PLUMED files (`chignolin-ref.pdb` for molinfo and `chignolin-ca.pdb` for RMSD calculation)
+  - **models**: frozen torchscript models for committor (`model_*.pt`, `model_*.para` files) and for z (`model_*_zeta.pt` files) for the different iterations
+  - **sims/template**: template folder for biased and unbiased simulations, including files for starting simulations from bound and unbound states (`b.gro`, `u.gro`, `NVT.mdp`, `topol.top`), PLUMED input files for unbiased and biased simulations (`plumed.dat`, `plumed_biased.dat`) and the additional PLUMED files (`conf_template.pdb` for alignment and `TEST_positions.cpp` for printing only atoms within the water coordination points neighborlist)
+
+
+
+#### calixarene : files for OAMe-G2 binding in explicit water using `Gromacs`
+
+  - **models**: frozen torchscript models for committor (`model_*.pt`, `model_*.para` files) and for z (`model_*_zeta.pt` files) for the different iterations
+  - **sims/template**: template folder for biased and unbiased simulations, including files for starting simulations from bound and unbound states (`b.gro`, `u.gro`, `NVT.mdp`, `topol.top`), PLUMED input files for unbiased and biased simulations (`plumed.dat`, `plumed_biased.dat`) and the additional PLUMED files (`conf_template.pdb` for alignment and `TEST_positions.cpp` for printing only atoms within the water coordination points neighborlist)
