@@ -51,7 +51,7 @@ In the main text, data from `iter_2` are reported
 Training data are too large for Github, they will be available in the Zenodo repo associated with the published paper.
   - **models**: frozen torchscript models for committor (`model_*.pt`, `model_*.para` files) and for z (`model_*_zeta.pt` files) for the different iterations
   - **sims/template**: template folder for biased and unbiased simulations, including files for starting simulations from folded and unfolded states (`folded.gro`, `unfolded.gro`, `mdT.mdp`, `topol.top`), PLUMED input files (`plumed.dat`, `plumed-descriptors.dat`, `plumed_position.dat`) and the additional PLUMED files (`chignolin-ref.pdb` for molinfo and `chignolin-ca.pdb` for RMSD calculation)
-  - **models**: frozen torchscript models for committor (`model_*.pt`, `model_*.para` files) and for z (`model_*_zeta.pt` files) for the different iterations
+  - **models**: frozen torchscript models for committor (`model_iter*_q.pt`, `model_iter*.para` files) and for z (`model_iter*_z.pt` files) for the different iterations
   - **sims/template**: template folder for biased and unbiased simulations, including files for starting simulations from bound and unbound states (`b.gro`, `u.gro`, `NVT.mdp`, `topol.top`), PLUMED input files for unbiased and biased simulations (`plumed.dat`, `plumed_biased.dat`) and the additional PLUMED files (`conf_template.pdb` for alignment and `TEST_positions.cpp` for printing only atoms within the water coordination points neighborlist)
 
 
