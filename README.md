@@ -9,7 +9,6 @@ The training of the models was based on the [mlcolvar library](https://github.co
 - [practical example: Alanine with distances](https://github.com/luigibonati/mlcolvar/blob/main/docs/notebooks/examples/ex_committor.ipynb)
 
 The results of the paper were obtained using the [1.2.2 version of the library](https://github.com/luigibonati/mlcolvar/tree/v1.2.2).
-A zipped version of the code is also available in this repo.
 
 ---
 
