@@ -10,6 +10,8 @@ The training of the models was based on the [mlcolvar library](https://github.co
 
 The results of the paper were obtained using the [1.2.2 version of the library](https://github.com/luigibonati/mlcolvar/tree/v1.2.2).
 
+The code for the application of the Kolmogorov bias in PLUMED is available in the file `pytorch_model_bias.cpp`
+
 ---
 
 ### Repo structure
