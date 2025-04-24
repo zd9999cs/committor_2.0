@@ -64,6 +64,8 @@ class PytorchModelBias :
   double epsilon;
   torch::jit::Module _model;
   torch::Device device = torch::kCPU;
+  int use_cuda;  // 改为int类型而非bool
+  int gpu_id;
 public:
   explicit PytorchModelBias(const ActionOptions&);
   void calculate();
@@ -80,18 +82,53 @@ void PytorchModelBias::registerKeywords(Keywords& keys) {
   keys.add("optional","FILE","Filename of the PyTorch compiled model");
   keys.add("optional","LAMBDA","Prefactor of the bias, default 1");
   keys.add("optional","EPSILON","Numerical regularization term in the logarithm, default 1e-6");
+  keys.add("optional","CUDA","Enable CUDA acceleration if available (1 for true, 0 for false, default: 1)");
+  keys.add("optional","GPU_ID","GPU device ID to use (default: 0)");
   keys.addOutputComponent("node", "default", "Model outputs");
   keys.addOutputComponent("bias", "default", "Model outputs");
 }
 
 std::vector<float> PytorchModelBias::tensor_to_vector(const torch::Tensor& x) {
-  return std::vector<float>(x.data_ptr<float>(), x.data_ptr<float>() + x.numel());
+  // 确保在获取数据前，张量在CPU上
+  torch::Tensor cpu_tensor = x.device().is_cuda() ? x.to(torch::kCPU) : x;
+  return std::vector<float>(cpu_tensor.data_ptr<float>(), cpu_tensor.data_ptr<float>() + cpu_tensor.numel());
 }
 
 PytorchModelBias::PytorchModelBias(const ActionOptions&ao):
   Action(ao),
   Function(ao)
-{ //print pytorch version
+{ 
+  // 使用int代替bool
+  use_cuda = 1;
+  parse("CUDA", use_cuda);
+  
+  // 默认使用GPU 0
+  gpu_id = 0;
+  parse("GPU_ID", gpu_id);
+
+  // 检测CUDA是否可用，并设置设备
+  if (use_cuda != 0 && torch::cuda::is_available()) {
+    // 修复整数比较警告
+    if (gpu_id >= static_cast<int>(torch::cuda::device_count())) {
+      log.printf("Warning: Requested GPU_ID %d not available. Total GPUs: %d. Falling back to GPU 0.\n", 
+                 gpu_id, static_cast<int>(torch::cuda::device_count()));
+      gpu_id = 0;
+    }
+    device = torch::Device(torch::kCUDA, gpu_id);
+    
+    // 使用正确的API获取GPU信息
+    log.printf("CUDA is available. Using GPU %d\n", gpu_id);
+    
+    // 避免使用不存在的API
+    log.printf("Total CUDA devices: %d\n", static_cast<int>(torch::cuda::device_count()));
+  } else {
+    if (use_cuda != 0 && !torch::cuda::is_available()) {
+      log.printf("Warning: CUDA requested but not available. Using CPU.\n");
+    } else if (use_cuda == 0) {
+      log.printf("CUDA explicitly disabled. Using CPU.\n");
+    }
+    device = torch::kCPU;
+  }
 
   //number of inputs of the model
   _n_in=getNumberOfArguments();
@@ -113,12 +150,17 @@ PytorchModelBias::PytorchModelBias(const ActionOptions&ao):
     {"_jit_fusion_strategy", ""}
   };
 
-  //deserialize the model from file
+  //改进的模型加载逻辑
   try {
-    _model = torch::jit::load(fname, device, metadata);
+    // 先尝试加载到 CPU，然后根据需要迁移到 GPU
+    _model = torch::jit::load(fname);
+    log.printf("Model loaded successfully\n");
+    // 将模型移至指定设备
+    _model.to(device);
+    if (device.is_cuda()) {
+      log.printf("Model successfully moved to CUDA device\n");
+    }
   } 
-
-  //if an error is thrown check if the file exists or not
   catch (const c10::Error& e) {
     std::ifstream infile(fname);
     bool exist = infile.good();
@@ -128,8 +170,8 @@ PytorchModelBias::PytorchModelBias(const ActionOptions&ao):
       std::stringstream ss;
       ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
       std::string version;
-      ss >> version; // extract into the string.
-      plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script') and that the Pytorch version matches the LibTorch one ("+version+").");
+      ss >> version;
+      plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script') and that the Pytorch version matches the LibTorch one ("+version+"). Error details: " + e.what());
     }
     else {
       plumed_merror("The FILE: '"+fname+"' does not exist.");
@@ -288,10 +330,9 @@ torch::Tensor gradient = torch::autograd::grad({output},
 
 // from the gradient we compute the bias
 // torch::Tensor log_grad_sq = (barrier/alpha)* torch::log( torch::sum( torch::pow(torch::masked_select(gradient,mask), 2)*torch::masked_select(rank_std,mask) ) + 1 ) / max_bias * torch::prod(torch::exp(-0.5*torch::div(torch::pow((torch::masked_select(input_S, mask) - torch::masked_select(mean,mask)),2), torch::pow(torch::masked_select(std,mask)*std_spread,2))));
-torch::Tensor Epsilon = torch::tensor(epsilon);
+torch::Tensor Epsilon = torch::tensor(epsilon).to(device);
 torch::Tensor log_grad_sq = lambda * ( torch::log( torch::sum( torch::pow(gradient, 2) ) + Epsilon ) - torch::log(Epsilon) );
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

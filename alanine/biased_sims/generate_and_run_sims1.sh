@@ -3,13 +3,11 @@
 # source programs
 # source ~/Bin/dev/gromacs-plumed2-dev/sourceme.sh
 export OMP_NUM_THREADS=30
-
+export PLUMED_NUM_THREADS=30
 # parse iteration number
 iter=$1
 
 # define core offset and number
-CORE_NUM=16
-CORE_OFFSET=0
 NSTEPS=$[500*1000*10] #last is ns
 
 
@@ -34,18 +32,16 @@ sed -i "s/model_0_z.pt/model_${iter}_z.pt/g" plumed.dat
 
 # cd A + run sim A
 cd A
-mpiexec -n 1 gmx_mpi mdrun -s ../input.sA.tpr -nsteps $NSTEPS -cpi state.cpt -plumed ../plumed.dat -gpu_id 0 -pin on -pinoffset $CORE_OFFSET &
+gmx_mpi mdrun -s ../input.sA.tpr -nsteps $NSTEPS -cpi state.cpt -plumed ../plumed.dat 
 wait 1
 cd ..
-CORE_OFFSET=$(($CORE_OFFSET+$CORE_NUM+1))
 
 
 
 # cd B + run sim B
 cd B
-mpiexec -n 1 gmx_mpi mdrun -s ../input.sB.tpr -nsteps $NSTEPS -cpi state.cpt -plumed ../plumed.dat -gpu_id 0 -pin on -pinoffset $CORE_OFFSET &
+gmx_mpi mdrun -s ../input.sB.tpr -nsteps $NSTEPS -cpi state.cpt -plumed ../plumed.dat 
 cd ..
-CORE_OFFSET=$(($CORE_OFFSET+$CORE_NUM+1))
 
 cd ..
 
